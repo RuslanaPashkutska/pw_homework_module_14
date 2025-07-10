@@ -1,0 +1,43 @@
+import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AnyHttpUrl
+dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.env'))
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=dotenv_path, extra='ignore')
+
+    database_url: str
+    secret_key: str
+    refresh_secret_key: str
+    algorithm: str = "HS256"
+    access_token_minutes: int = 30
+    refresh_token_expire_days: int = 7
+    debug: bool = False
+    base_url: AnyHttpUrl
+
+    cloudinary_name: str
+    cloudinary_api_key: str
+    cloudinary_api_secret: str
+
+    mail_username: str
+    mail_password: str
+    mail_from: str
+    mail_port: int
+    mail_server: str
+    mail_starttls: bool
+    mail_ssl: bool
+
+    redis_host: str
+    redis_port: int = 6379
+
+    base_url: str
+
+settings = Settings()
+
+print("DB URL:", settings.database_url)
+print("Debug mode:", settings.debug)
+print("Cloudinary Name:", settings.cloudinary_name)
+print("Mail Server:", settings.mail_server)
+print("Redis Host:", settings.redis_host)
+print("Ruta .env usada:", dotenv_path)
