@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import date
 from typing import Optional
+
 
 
 class ContactBase(BaseModel):
@@ -46,10 +47,9 @@ class ContactResponse(ContactBase):
 
     Attributes:
         id (int): Unique identifier for the contact.
-        user_id (int): ID of the user who owns the contact.
+        owner_id (int): ID of the user who owns the contact.
     """
     id: int
-    user_id: int
+    owner_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

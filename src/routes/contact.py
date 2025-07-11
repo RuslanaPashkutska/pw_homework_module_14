@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional
+
 from src.schemas.contact import ContactCreate, ContactResponse, ContactUpdate
 from src.database.db import get_db
 from src.auth.auth import get_current_user
-from src.database.models import User
+from src.database.models import User, Contact as ContactModel
 from src.repository import contacts as repository_contacts
-from typing import Optional
 from fastapi_limiter.depends import RateLimiter
 from src.cache.redis_client import redis_client
+
+
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 
 @router.get("/", response_model=List[ContactResponse])
@@ -20,7 +22,7 @@ async def get_contacts(current_user: User = Depends(get_current_user), db: Async
     :param db: Database session.
     :return: List of contact objects.
     """
-    contacts = await repository_contacts.get_contacts_by_user(current_user.id, db)
+    contacts = await repository_contacts.get_contacts(db, current_user.id)
     return contacts
 
 @router.post("/", response_model=ContactResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
@@ -35,7 +37,18 @@ async def create_contact(contact: ContactCreate, current_user: User = Depends(ge
     :param db: Database session.
     :return: The newly created contact.
     """
-    new_contact = await repository_contacts.create_contact(user_id=current_user.id, contact=contact, db=db)
+    new_contact = new_contact = ContactModel(
+        first_name=contact.first_name,
+        last_name=contact.last_name,
+        email=contact.email,
+        phone=contact.phone,
+        birthday=contact.birthday,
+        extra_info=contact.extra_info,
+        owner_id=current_user.id
+    )
+    db.add(new_contact)
+    await db.commit()
+    await db.refresh(new_contact)
     return new_contact
 
 @router.get("/{contact_id}", response_model=ContactResponse)

@@ -63,14 +63,12 @@ class TestUserRepository(unittest.IsolatedAsyncioTestCase):
         self.db.execute.assert_called_once()
 
     async def test_create_user(self):
-        mock_user_instance_in_db = MagicMock()
+        mock_user_instance_in_db = MagicMock(spec=models.User)
         mock_user_instance_in_db.email = self.user_email
         mock_user_instance_in_db.hashed_password = self.hashed_password
         mock_user_instance_in_db.is_verified = False
 
         with unittest.mock.patch('src.repository.users.models.User', return_value=mock_user_instance_in_db) as mock_User_class:
-            self.db.add = AsyncMock()
-            self.db.commit = AsyncMock()
 
             async def set_id_on_refresh_side_effect(obj):
                 obj.id = self.user_id
