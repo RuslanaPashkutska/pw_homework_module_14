@@ -121,8 +121,7 @@ def create_email_verification_token(user_id: int) -> str:
     :param user_id: ID of the user.
     :return: UUID token string.
     """
-    token = str(uuid.uuid4())
-    return token
+    return str(uuid.uuid4())
 
 async def save_verification_token(user_id: int, token: str, token_type:str, db:AsyncSession) -> None:
     """

@@ -1,9 +1,8 @@
-from pathlib import Path
-
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from fastapi_mail.errors import ConnectionErrors
 from pydantic import EmailStr
 from jinja2 import Environment, FileSystemLoader
+from pathlib import Path
 from src.conf.config import settings
 
 
@@ -80,18 +79,6 @@ async def send_reset_password_email(email: str, token: str):
         token (str): Password reset token to include in the reset URL.
     """
     try:
-        env = Environment(loader=FileSystemLoader("templates"))
-        template = env.get_template("reset_password.html")
-        reset_link = f"{settings.frontend_base_url}/reset-password?token={token}"
-        html = template.render(reset_link=reset_link)
-
-        message = MessageSchema(
-            subject= "Reset your password",
-            recipients=[email],
-            body=html,
-            subtype=MessageType.html,
-        )
-
         conf = ConnectionConfig(
             MAIL_USERNAME=settings.mail_username,
             MAIL_PASSWORD=settings.mail_password,
@@ -105,8 +92,25 @@ async def send_reset_password_email(email: str, token: str):
             VALIDATE_CERTS=True,
             TEMPLATE_FOLDER=Path(__file__).parent / 'templates'
         )
+
+        template_name = "reset_password.html"
+        reset_link = f"{settings.frontend_base_url}/reset-password?token={token}"
+
+        env = Environment(loader=FileSystemLoader(conf.TEMPLATE_FOLDER))
+        template = env.get_template(template_name)
+        html = template.render(reset_link=reset_link)
+
+        message = MessageSchema(
+            subject= "Reset your password",
+            recipients=[email],
+            body=html,
+            subtype=MessageType.html,
+        )
+
         fm = FastMail(conf)
         await fm.send_message(message)
+        print(f"Reset password email sent successfully to {email}")
+
     except ConnectionErrors as e:
         print(f"Failed to send reset password email to {email}: Connection error - {e}")
         raise
