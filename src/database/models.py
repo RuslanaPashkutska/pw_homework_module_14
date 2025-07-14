@@ -44,7 +44,7 @@ class VerificationToken(Base):
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     token = Column(String(255), unique=True, index=True, nullable=False)
     token_type = Column(String(50), nullable=False)
-    expires_at = Column(DateTime, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User")

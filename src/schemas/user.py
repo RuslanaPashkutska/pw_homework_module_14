@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr
-from datetime import date
+from pydantic import BaseModel, EmailStr, ConfigDict
+from datetime import datetime
 from typing import Optional
 
 
@@ -11,6 +11,9 @@ class UserBase(BaseModel):
         email (EmailStr): The email address of the user.
     """
     email: EmailStr
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 class UserCreate(UserBase):
     """
@@ -30,7 +33,16 @@ class UserLogin(UserBase):
     """
     password: str
 
-class UserResponse(UserBase):
+class UserDataResponse(UserBase):
+    id: int
+    is_verified: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+
+class UserResponse(BaseModel):
     """
     Schema for returning user data in responses.
 
@@ -38,11 +50,10 @@ class UserResponse(UserBase):
         id (int): The unique identifier of the user.
         created_at (Optional[date]): The date the user was created.
     """
-    id: int
-    created_at: Optional[date]
+    user: UserDataResponse
+    detail: str
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
 
 class Token(BaseModel):
     """

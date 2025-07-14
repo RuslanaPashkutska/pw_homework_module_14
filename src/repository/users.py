@@ -3,6 +3,7 @@ from sqlalchemy import select
 from typing import Optional
 
 from src.database import models
+from src.database.models import User
 from src.schemas.user import UserCreate
 
 

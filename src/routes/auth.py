@@ -7,6 +7,7 @@ from src.auth.auth import get_password_hash, verify_password, create_access_toke
 from src.services.email import send_email
 from src.database.db import get_db
 from src.conf.config import settings
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -22,14 +23,22 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     :param db: Database session.
     :return: The newly registered user.
     """
-    existing_user = await repository_users.get_user_by_email(user.email, db)
+    existing_user = await repository_users.get_user_by_email(db, user.email)
     if existing_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists")
     hashed_password = get_password_hash(user.password)
     new_user = await repository_users.create_user(user=user, hashed_password=hashed_password, db=db)
-    verification_token = await create_email_verification_token_and_save(new_user.id, db)
-    await send_email(new_user.email, new_user.email, verification_token, "verify_email")
-    return new_user
+
+    verification_token = await create_email_verification_token_and_save(new_user.email, db)
+
+    try:
+        await send_email(new_user.email, new_user.email, verification_token, "verify_email")
+        detail_message = "User successfully registered. Check your email for verification."
+    except Exception as e:
+        print(f"ATENCIÓN: Fallo al enviar email de verificación a {new_user.email}: {e}")
+        detail_message = "User successfully registered, but failed to send verification email. Please contact support."
+
+    return UserResponse(user=new_user, detail=detail_message)
 
 @router.get("/verify_email/{token}")
 async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
@@ -54,7 +63,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     :param db: Database session.
     :return: JWT access and refresh tokens.
     """
-    db_user = await repository_users.get_user_by_email(user.email, db)
+    db_user = await repository_users.get_user_by_email(db, user.email)
     if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if not db_user.is_verified:
@@ -77,11 +86,18 @@ async def request_password_reset(body: RequestPasswordReset, db: AsyncSession = 
     :param db: Database session.
     :return: Message indicating reset link was sent is user exists.
     """
-    token = await create_password_reset_token_and_save(body.email, db)
-    user = await repository_users.get_user_by_email(body.email, db)
-    if token and user:
-        await send_email(user.email, user.email, token, "reset_password")
+    try:
+        token = await create_password_reset_token_and_save(body.email, db)
+        user = await repository_users.get_user_by_email(db,
+                                                        body.email)
+        if token and user:
+            await send_email(user.email, user.email, token, "reset_password")
+    except HTTPException as e:
+        if e.status_code == status.HTTP_404_NOT_FOUND:
+            return {"message": "If a user with that email exists, a password reset link has been sent."}
+        raise e
     return {"message": "If a user with that email exists, a password reset link has been sent."}
+
 
 @router.post("/reset_password", status_code=status.HTTP_200_OK)
 async def reset_password_confirm(body: ResetPassword, db: AsyncSession = Depends(get_db)):
@@ -92,9 +108,19 @@ async def reset_password_confirm(body: ResetPassword, db: AsyncSession = Depends
     :param db: Database session.
     :return: Message confirming password reset.
     """
-    user = await reset_password(body.token, body.new_password, db)
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+    try:
+        user = await reset_password(body.token, body.new_password, db)
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+
+    except HTTPException as e:
+        raise e
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f"An unexpected error occurred: {e}")
+
     return {"message": "Password has been reset successfully"}
 
 
@@ -116,10 +142,37 @@ async def reset_password(token:str = Form(...), new_password: str = Form(...), d
     except JWTError:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
 
-    user = await repository_users.get_user_by_email(email, db)
+    user = await repository_users.get_user_by_email(db, email)
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
     hashed_password = get_password_hash(new_password)
     user.hashed_password = hashed_password
     await db.commit()
+    return {"message": "Password has been reset successfully"}
+
+
+@router.post("/reset-password")
+async def reset_password_via_form(token: str = Form(...), new_password: str = Form(...),
+                                  db: AsyncSession = Depends(get_db)):
+    """
+    Reset password via form input using JWT token.
+
+    :param token: JWT reset token from form.
+    :param new_password: New password from form.
+    :param db: Database session.
+    :return: Message confirming password reset.
+    """
+    try:
+        user = await reset_password(token, new_password, db)
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+
+    except HTTPException as e:
+        raise e
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f"An unexpected error occurred: {e}")
+
     return {"message": "Password has been reset successfully"}
