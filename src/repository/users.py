@@ -15,9 +15,13 @@ async def get_user_by_email(db: AsyncSession, email: str):
     :param email: Email address of the user.
     :return: User object if found, otherwise None.
     """
+    print(f"DEBUG users_repo.get_user_by_email: db received: {type(db)} - {db}")
+
     result = await db.execute(
         select(models.User).filter(models.User.email == email)
     )
+    print(f"DEBUG users_repo.get_user_by_email: After db.execute, db: {type(db)} - {db}")
+
     return result.scalar_one_or_none()
 
 async def get_user_by_id(db: AsyncSession, user_id: int):
@@ -73,6 +77,7 @@ async def update_user_password(db: AsyncSession, user_id: int, new_hashed_passwo
     :param new_hashed_password: New hashed password to store.
     :return: Updated user object if found, otherwise None.
     """
+
     user = await get_user_by_id(db, user_id)
     if user:
         user.hashed_password = new_hashed_password

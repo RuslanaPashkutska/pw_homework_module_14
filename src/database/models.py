@@ -17,6 +17,8 @@ class User(Base):
     contacts = relationship("Contact", back_populates="owner")
     refresh_token = Column(String(255), nullable=True)
     confirmed = Column(Boolean, default=False)
+    email_verification_token = Column(String, nullable=True, unique=True)
+
 
 
 class Contact(Base):

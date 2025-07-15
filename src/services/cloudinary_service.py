@@ -1,9 +1,10 @@
 import cloudinary
 import cloudinary.uploader
+from cloudinary.exceptions import Error as CloudinaryApiError
 from src.conf.config import settings
 
 
-# Configure Cloudinary using settings from the config file
+
 cloudinary.config(
     cloud_name=settings.cloudinary_name,
     api_key=settings.cloudinary_api_key,
@@ -20,7 +21,15 @@ def upload_avatar(file):
 
     Returns:
         str: The secure URL of the uploaded image.
-    """
 
-    result = cloudinary.uploader.upload(file)
-    return result["secure_url"]
+    Raises:
+        CloudinaryApiError: If the upload fails due to Cloudinary-related issues.
+        KeyError: If 'secure_url' is not found in the response.
+    """
+    try:
+        result = cloudinary.uploader.upload(file)
+        return result["secure_url"]
+    except CloudinaryApiError as e:
+        raise CloudinaryApiError(f"Cloudinary upload failed: {e}")
+    except KeyError:
+        raise KeyError("Cloudinary response did not contain 'secure_url'")

@@ -125,11 +125,12 @@ async def get_upcoming_birthdays(db: AsyncSession, user_id: int):
     :return: List of contact objects with upcoming birthdays.
     """
     today = date.today()
-    next_week = today + timedelta(days=7)
+    search_end_date = today + timedelta(days=30)
+
     result = await db.execute(
         select(models.Contact).filter(
             models.Contact.owner_id == user_id,
-            models.Contact.birthday.between(today, next_week)
+            models.Contact.birthday.between(today, search_end_date)
         )
     )
     return result.scalars().all()

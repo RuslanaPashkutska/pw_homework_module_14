@@ -55,8 +55,8 @@ class TestEmailService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(called_conf.MAIL_FROM_NAME, mock_settings.mail_from_name)
         self.assertEqual(called_conf.MAIL_STARTTLS, mock_settings.mail_starttls)
         self.assertEqual(called_conf.MAIL_SSL_TLS, mock_settings.mail_ssl)
-        self.assertEqual(called_conf.USE_CREDENTIALS, True)  # Esto está hardcodeado en tu servicio
-        self.assertEqual(called_conf.VALIDATE_CERTS, True)  # Esto está hardcodeado en tu servicio
+        self.assertEqual(called_conf.USE_CREDENTIALS, True)
+        self.assertEqual(called_conf.VALIDATE_CERTS, True)
         self.assertEqual(called_conf.TEMPLATE_FOLDER,
                          Path(__file__).parent.parent.parent / 'src' / 'services' / 'templates')
 
@@ -133,30 +133,44 @@ class TestEmailService(unittest.IsolatedAsyncioTestCase):
 
         mock_fastmail_class.assert_not_called()
 
-
     @patch("src.services.email.FastMail")
+    @patch("src.services.email.Environment")
     @patch("src.services.email.settings", autospec=True)
-    async def test_send_email_connection_error(self, mock_settings, mock_fastmail_class):
+    @patch("src.services.email.FileSystemLoader")
+    async def test_send_reset_password_email_connection_error(self, mock_file_system_loader_class, mock_settings, mock_environment_class, mock_fastmail_class):
         self._setup_mock_settings(mock_settings)
+
+        mock_template = MagicMock()
+        mock_template.render.return_value = "<html>Reset HTML</html>"
+        mock_env_instance = MagicMock()
+        mock_env_instance.get_template.return_value = mock_template
+        mock_environment_class.return_value = mock_env_instance
+
+        mock_fs_loader_instance = MagicMock()
+        mock_file_system_loader_class.return_value = mock_fs_loader_instance
 
         mock_fastmail_instance = AsyncMock()
         mock_fastmail_class.return_value = mock_fastmail_instance
-        mock_fastmail_instance.send_message.side_effect = email_service.ConnectionErrors("Simulated Connection Error")
+        mock_fastmail_instance.send_message.side_effect = ConnectionErrors("Simulated Reset Connection Error")
+
+        test_email = "reset_conn_fail@example.com"
+        test_token = "conn_fail_token"
+
 
         with patch("builtins.print") as mock_print:
-            await email_service.send_email(
-                email="connection@example.com",
-                user_name="ConnErr",
-                token="token",
-                email_type="verify_email"
-            )
+            with self.assertRaises(ConnectionErrors) as cm:
+                await email_service.send_reset_password_email(email=test_email, token=test_token)
+
+            self.assertIn("Simulated Reset Connection Error", str(cm.exception))
 
             mock_print.assert_called_once_with(
-                f"Failed to send email to connection@example.com: Connection error - Simulated Connection Error"
+                f"Failed to send reset password email to {test_email}: Connection error - Simulated Reset Connection Error"
             )
-            mock_fastmail_class.assert_called_once()
-            mock_fastmail_instance.send_message.assert_called_once()
 
+        mock_fastmail_class.assert_called_once()
+        mock_fastmail_instance.send_message.assert_called_once()
+        mock_environment_class.assert_called_once()
+        mock_file_system_loader_class.assert_called_once()
 
     @patch("src.services.email.FastMail")
     @patch("src.services.email.settings", autospec=True)
@@ -179,7 +193,6 @@ class TestEmailService(unittest.IsolatedAsyncioTestCase):
             )
             mock_fastmail_class.assert_called_once()
             mock_fastmail_instance.send_message.assert_called_once()
-
 
     @patch("src.services.email.FileSystemLoader")
     @patch("src.services.email.Environment")
@@ -229,11 +242,13 @@ class TestEmailService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(message_schema.body, "<html>Reset HTML</html>")
         self.assertEqual(message_schema.subtype, MessageType.html)
 
-
+    @patch("src.services.email.FileSystemLoader")
     @patch("src.services.email.Environment")
     @patch("src.services.email.FastMail")
     @patch("src.services.email.settings", autospec=True)
-    async def test_send_reset_password_email_failure(self, mock_settings, mock_fastmail_class, mock_environment_class):
+    async def test_send_reset_password_email_failure(self, mock_settings, mock_fastmail_class, mock_environment_class,
+                                                     mock_file_system_loader_class):
+
         self._setup_mock_settings(mock_settings)
 
         mock_template = MagicMock()
@@ -242,6 +257,9 @@ class TestEmailService(unittest.IsolatedAsyncioTestCase):
         mock_env_instance = MagicMock()
         mock_env_instance.get_template.return_value = mock_template
         mock_environment_class.return_value = mock_env_instance
+
+        mock_fs_loader_instance = MagicMock()
+        mock_file_system_loader_class.return_value = mock_fs_loader_instance
 
         mock_fastmail_instance = AsyncMock()
         mock_fastmail_class.return_value = mock_fastmail_instance
@@ -257,10 +275,10 @@ class TestEmailService(unittest.IsolatedAsyncioTestCase):
                 f"Failed to send reset password email to fail@example.com: An unexpected error occurred - Jinja2 render error or other email sending issue"
             )
 
-
         mock_fastmail_instance.send_message.assert_called_once()
         mock_fastmail_class.assert_called_once()
-
+        mock_environment_class.assert_called_once()
+        mock_file_system_loader_class.assert_called_once()
 
 
 if __name__ == '__main__':

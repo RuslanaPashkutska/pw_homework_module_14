@@ -1,12 +1,15 @@
-from fastapi import APIRouter, UploadFile, File, Depends
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 from src.services.cloudinary_service import upload_avatar
 from src.database.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
 router = APIRouter(
     prefix="/users",
     tags=["users"]
 )
+
+logger = logging.getLogger(__name__)
 
 @router.get("/")
 async def get_users():
@@ -36,5 +39,12 @@ async def update_avatar(file: UploadFile = File(...), db: AsyncSession = Depends
     :param db: Async database session
     :return: URL of the uploaded avatar image.
     """
-    url = upload_avatar(file.file)
-    return {"avatar_url": url}
+    try:
+        url = upload_avatar(file.file)
+        return {"avatar_url": url}
+    except Exception as e:
+        logger.error(f"Error uploading avatar to Cloudinary: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not upload avatar. Please try again later."
+        )

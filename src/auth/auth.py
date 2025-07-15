@@ -15,6 +15,9 @@ from src.repository import auth as repository_auth
 from src.conf.config import settings
 
 
+ALGORITHM = "HS256"
+SECRET_KEY = "your-secret-key"
+
 def make_aware(dt: datetime) -> datetime:
     """
     Ensures a datetime object has timezone information, defaulting to UTC if naive.
@@ -235,7 +238,9 @@ async def create_password_reset_token_and_save(email: str, db: AsyncSession,
     :return: The reset token string.
     :raises HTTPException: If user not found.
     """
+    print(f"DEBUG create_password_reset_token_and_save: db received: {type(db)} - {db}")
     user = await repository_users.get_user_by_email(db, email)
+    print(f"DEBUG create_password_reset_token_and_save: After get_user_by_email, db: {type(db)} - {db}")
     if user is None:
 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
@@ -252,53 +257,68 @@ async def create_password_reset_token_and_save(email: str, db: AsyncSession,
 
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
-
+    print(f"DEBUG create_password_reset_token_and_save: Calling save_verification_token with db: {type(db)} - {db}")
     await save_verification_token(user.id, encoded_jwt, "password_reset", db)
+    print(f"DEBUG create_password_reset_token_and_save: After save_verification_token, db: {type(db)} - {db}")
 
     return encoded_jwt
 
 
-async def reset_password(token: str, new_password: str, db: AsyncSession) -> User:
-    """
-    Reset user's password using a valid reset token.
-
-    :param token: Password reset token.
-    :param new_password: New password to set.
-    :param db: Async database session.
-    :return: Updated user.
-    :raises HTTPException: If token invalid/expired or user not found.
-    """
+async def reset_password(token: str, new_password: str, db: AsyncSession) -> Optional[User]:
+    print(f"DEBUG src/auth/auth.py reset_password: db received: {type(db)} - {db}")
     credentials_exception = HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Invalid or expired reset token"
     )
+
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         email: str = payload.get("sub")
         token_type: str = payload.get("type")
 
         if email is None or token_type != "password_reset":
+            print("DEBUG src/auth/auth.py reset_password: Email is None or token_type is not password_reset.")
             raise credentials_exception
 
-
+        print(f"DEBUG src/auth/auth.py reset_password: Calling get_verification_token with db: {type(db)} - {db}")
         reset_token_db = await repository_auth.get_verification_token(token, "password_reset", db)
 
-        if reset_token_db is None or make_aware(reset_token_db.expires_at) < datetime.now(timezone.utc):
+        if reset_token_db is None:
+            print("DEBUG src/auth/auth.py reset_password: Verification token not found in DB.")
             raise credentials_exception
 
+        if make_aware(reset_token_db.expires_at) < datetime.now(timezone.utc):
+            print("DEBUG src/auth/auth.py reset_password: Verification token expired.")
+            raise credentials_exception
+
+        print(f"DEBUG src/auth/auth.py reset_password: Calling get_user_by_email with db: {type(db)} - {db}")
         user = await repository_users.get_user_by_email(db, email)
         if not user:
-
+            print(f"DEBUG src/auth/auth.py reset_password: User not found for email from token: {email}")
             raise credentials_exception
 
     except JWTError:
+        print("DEBUG src/auth/auth.py reset_password: JWTError during token decode or validation.")
         raise credentials_exception
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"DEBUG src/auth/auth.py reset_password: Unexpected error during token validation: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred during token validation: {e}")
+
+
 
     hashed_new_password = get_password_hash(new_password)
+    user.hashed_password = hashed_new_password
 
-    updated_user = await repository_users.update_user_password(user.id, hashed_new_password, db)
+    print(f"DEBUG src/auth/auth.py reset_password: Before db.commit(), db: {type(db)} - {db}")
+    await db.commit()
+    print(f"DEBUG src/auth/auth.py reset_password: After db.commit(), db: {type(db)} - {db}")
+    await db.refresh(user)
+    print(f"DEBUG src/auth/auth.py reset_password: After db.refresh(), db: {type(db)} - {db}")
 
+    print(f"DEBUG src/auth/auth.py reset_password: Calling delete_verification_token for token_id: {reset_token_db.id}")
     await repository_auth.delete_verification_token(reset_token_db.id, db)
+    print(f"DEBUG src/auth/auth.py reset_password: After delete_verification_token, db: {type(db)} - {db}")
 
-
-    return updated_user
+    return user

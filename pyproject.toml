@@ -43,3 +43,27 @@ setuptools = "^80.9.0"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "--cov=src --cov-report=html --cov-report=term-missing"
+testpaths = "tests"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/__init__.py",
+    "*/__main__.py",
+
+]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "if TYPE_CHECKING:",
+    "@(abc\\.)?abstractmethod",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+]

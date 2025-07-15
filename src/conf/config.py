@@ -5,7 +5,9 @@ dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.en
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=dotenv_path, extra='ignore')
+    database_url: str
+    database_test_url: str = "sqlite+aiosqlite:///./test_db.sqlite3"
+
 
     database_url: str
     secret_key: str
@@ -14,7 +16,7 @@ class Settings(BaseSettings):
     access_token_minutes: int = 30
     refresh_token_expire_days: int = 7
     debug: bool = False
-    base_url: AnyHttpUrl
+    debug_mode: bool = False
 
     cloudinary_name: str
     cloudinary_api_key: str
@@ -32,6 +34,8 @@ class Settings(BaseSettings):
     redis_port: int = 6379
 
     base_url: str
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()
 

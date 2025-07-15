@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import  AsyncSession
 from sqlalchemy import select, delete
 from src.database import models
 from typing import Optional
+from src.database.models import VerificationToken, User
 
 async def create_verification_token(token_db: models.VerificationToken, db:AsyncSession) -> models.VerificationToken:
     """

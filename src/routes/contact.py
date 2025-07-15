@@ -37,7 +37,7 @@ async def create_contact(contact: ContactCreate, current_user: User = Depends(ge
     :param db: Database session.
     :return: The newly created contact.
     """
-    new_contact = new_contact = ContactModel(
+    new_contact = ContactModel(
         first_name=contact.first_name,
         last_name=contact.last_name,
         email=contact.email,
@@ -70,7 +70,7 @@ async def update_contact(contact_id: int, updated_contact: ContactUpdate, curren
     """
     Update an existing contact by ID.
 
-    :param contact_id: ID og the contact to update.
+    :param contact_id: ID of the contact to update.
     :param updated_contact: Updated contact data.
     :param current_user: Authenticated user.
     :param db: Database session.
@@ -94,7 +94,6 @@ async def delete_contact(contact_id: int, current_user: User = Depends(get_curre
     contact = await repository_contacts.delete_contact(db, contact_id, current_user.id)
     if contact is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.get("/search/", response_model=List[ContactResponse])
 async def search_contacts(query: Optional[str] = None, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -121,4 +120,3 @@ async def get_upcoming_birthdays(current_user: User = Depends(get_current_user),
     """
     birthdays = await repository_contacts.get_upcoming_birthdays(db, current_user.id)
     return birthdays
-

@@ -8,9 +8,7 @@ import redis.asyncio as redis
 from src.conf.config import settings
 
 from src.routes import auth, contact, users
-
-from src.cache.redis_client import redis_client
-
+from src.cache.redis_client import redis_client as default_redis_client
 from src.database.db import Base, engine
 
 app = FastAPI(
@@ -18,7 +16,7 @@ app = FastAPI(
     description="API for managing contacts, users, authentication, and more.",
     version="0.1.0",
 )
-# CORS configuration for frontend integration
+
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -31,14 +29,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Include routers for authentication, contacts, and user management
+
 app.include_router(auth.router)
 app.include_router(contact.router)
 app.include_router(users.router)
 
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event(redis_client_instance: redis.Redis = default_redis_client):
     """
         Startup event handler to initialize services such as:
         - Redis rate limiter (FastAPILimiter)
@@ -51,12 +49,12 @@ async def startup_event():
     print("Starting up application...")
 
     try:
-        await FastAPILimiter.init(redis_client)
+        await FastAPILimiter.init(redis_client_instance)
         print("FastAPILimiter initialized with Redis.")
     except Exception as e:
         print(f"Error initializing FastAPILimiter: {e}")
 
-    # Configure Cloudinary for image uploads (e.g., avatar)
+
     cloudinary.config(
         cloud_name=settings.cloudinary_name,
         api_key=settings.cloudinary_api_key,
@@ -66,7 +64,6 @@ async def startup_event():
     print("Cloudinary configured.")
 
 
-    # Create tables in the database if they do not exist
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         print("Database tables created/checked.")
