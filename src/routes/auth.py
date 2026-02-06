@@ -61,7 +61,7 @@ async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
     :param db: Database session.
     :return: Success message if the token is valid.
     """
-    user = await verify_email_token(token, db)
+    user = await verify_email_token(token.strip(), db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
     return {"message": "Email successfully verified"}

@@ -149,6 +149,9 @@ async def create_email_verification_token_and_save(email: str, db: AsyncSession,
 
     await save_verification_token(user.id, encoded_jwt, "email_verification", db)
 
+    user.email_verification_token = encoded_jwt
+    await db.commit()
+
     return encoded_jwt
 
 
