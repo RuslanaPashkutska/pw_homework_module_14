@@ -1,65 +1,83 @@
-Contacts API
+# **Contacts API**
 
 Backend REST API for managing users and their personal contacts, built with FastAPI.
 
 This project implements a full authentication and authorization flow using OAuth2 Password Flow with JWT, user-scoped resources, async database access, caching, rate limiting, email verification, and cloud storage for avatars.
 
 
-🚀 Features
+## 🚀 Features
 
-Authentication & Security
+### Authentication & Security
 
-User registration and login
+* User registration and login
 
-Email verification flow
 
-OAuth2 Password Flow
+* Email verification flow
 
-JWT access and refresh tokens
 
-Protected endpoints using Depends(get_current_user)
+* OAuth2 Password Flow
 
-Rate limiting with Redis
 
-Contacts Management
+* JWT access and refresh tokens
 
-Create, read, update, delete contacts (CRUD)
 
-Contacts are scoped to the authenticated user
+* Protected endpoints using Depends(get_current_user)
 
-Search contacts by name or email
 
-Get upcoming birthdays
+* Rate limiting with Redis
 
-Users
+## Contacts Management
 
-Get current user profile
+* Create, read, update, delete contacts (CRUD)
 
-Upload user avatar to Cloudinary
 
-Tech Stack
+* Contacts are scoped to the authenticated user
+
+
+* Search contacts by name or email
+
+
+* Get upcoming birthdays
+
+## Users
+
+* Get current user profile
+
+
+* Upload user avatar to Cloudinary
+
+## Tech Stack
 
 FastAPI
 
-Async SQLAlchemy
+* Async SQLAlchemy
 
-PostgreSQL
 
-Redis (rate limiting)
+* PostgreSQL
 
-Cloudinary (avatar storage)
 
-JWT / OAuth2
+* Redis (rate limiting)
 
-Pydantic
 
-Alembic (migrations)
+* Cloudinary (avatar storage)
 
-Poetry (dependency management)
 
-Pytest / Unittest (tests)
+* JWT / OAuth2
 
-📂 Project Structure
+
+* Pydantic
+
+
+* Alembic (migrations)
+
+
+* Poetry (dependency management)
+
+
+* Pytest / Unittest (tests)
+
+## 📂 Project Structure
+
 src/
 ├── auth/          # Authentication logic
 ├── routes/        # API routes (auth, contacts, users)
@@ -72,7 +90,7 @@ src/
 └── main.py        # Application entry point
 
 
-⚙️ Environment Variables
+## ⚙️ Environment Variables
 
 Create a .env file based on .env.example:
 
@@ -104,56 +122,70 @@ BASE_URL=http://localhost:8000
 FRONTEND_BASE_URL=http://localhost:3000
 
 
-▶️ Run the Project
+## ▶️ Run the Project
 
-1️⃣ Install dependencies
+### 1️⃣ Install dependencies
+
 poetry install
 
-2️⃣ Run database migrations
+### 2️⃣ Run database migrations
+
 alembic upgrade head
 
-3️⃣ Start the server
+### 3️⃣ Start the server
+
 poetry run uvicorn src.main:app --reload
 
-The API will be available at:
+### The API will be available at:
+
 http://127.0.0.1:8000
 
-Swagger UI:
+### Swagger UI:
+
 http://127.0.0.1:8000/docs
 
-🔐 Authentication Flow
+## 🔐 Authentication Flow
 
-Register a new user (POST /auth/register)
+1. Register a new user (POST /auth/register)
 
-Verify email via link sent by email (GET /auth/verify_email/{token})
 
-Login using OAuth2 (POST /auth/login)
+2. Verify email via link sent by email (GET /auth/verify_email/{token})
 
-In Swagger UI, click Authorize and enter:
 
-username → email
+3. Login using OAuth2 (POST /auth/login)
 
-password → user password
 
-Access protected endpoints
+4. In Swagger UI, click Authorize and enter:
 
-📌 Contacts Endpoints (Protected)
+   * username → email
 
-GET /contacts/ — list contacts
+   * password → user password
 
-POST /contacts/ — create contact
+5. Access protected endpoints
 
-GET /contacts/{id} — get contact by id
+## 📌 Contacts Endpoints (Protected)
 
-PUT /contacts/{id} — update contact
+* GET /contacts/ — list contacts
 
-DELETE /contacts/{id} — delete contact
 
-GET /contacts/search/?query= — search contacts
+* POST /contacts/ — create contact
 
-GET /contacts/birthdays/upcoming — upcoming birthdays
 
-🧪 Tests
+* GET /contacts/{id} — get contact by id
+
+
+* PUT /contacts/{id} — update contact
+
+
+* DELETE /contacts/{id} — delete contact
+
+
+* GET /contacts/search/?query= — search contacts
+
+
+* GET /contacts/birthdays/upcoming — upcoming birthdays
+
+## 🧪 Tests
 
 Run tests with:
 pytest --cov=src
