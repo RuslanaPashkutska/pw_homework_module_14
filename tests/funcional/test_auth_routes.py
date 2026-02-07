@@ -134,8 +134,8 @@ async def test_login_success(
 
     mock_get_user_by_email.return_value = mock_user
 
-    login_response = await test_client.post("/auth/login", json={
-        "email": "verified@example.com",
+    login_response = await test_client.post("/auth/login", data={
+        "username": "verified@example.com",
         "password": "password123"
     })
 
@@ -156,8 +156,8 @@ async def test_login_success(
 async def test_login_invalid_credentials_user_not_found(mock_get_user_by_email, test_client: AsyncClient):
     mock_get_user_by_email.return_value = None
 
-    login_data = {"email": "nonexistent@example.com", "password": "wrongpassword"}
-    response = await test_client.post("/auth/login", json=login_data)
+
+    response = await test_client.post("/auth/login", data={"username": "nonexistent@example.com", "password": "wrong"})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json() == {"detail": "Invalid credentials"}
@@ -180,8 +180,8 @@ async def test_login_invalid_credentials_wrong_password(
     mock_get_user_by_email.return_value = mock_user
     mock_verify_password.return_value = False
 
-    login_data = {"email": "test@example.com", "password": "wrong_password"}
-    response = await test_client.post("/auth/login", json=login_data)
+
+    response = await test_client.post("/auth/login", data={"username": "test@example.com", "password": "wrong_password"})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json() == {"detail": "Invalid credentials"}
@@ -205,8 +205,8 @@ async def test_login_email_not_verified(
     mock_get_user_by_email.return_value = mock_user
     mock_verify_password.return_value = True
 
-    login_data = {"email": "unverified@example.com", "password": "password123"}
-    response = await test_client.post("/auth/login", json=login_data)
+
+    response = await test_client.post("/auth/login", data={"username": "unverified@example.com", "password": "password123"})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json() == {"detail": "Email not verified. Please check your inbox."}
@@ -342,8 +342,8 @@ async def test_reset_password_json_success(mock_send, mock_create_email_token, t
     await session.commit()
     await session.refresh(user_in_db)
 
-    login_response = await test_client.post("/auth/login", json={
-        "email": email,
+    login_response = await test_client.post("/auth/login", data={
+        "username": email,
         "password": "newstrongpass"
     })
     assert login_response.status_code == status.HTTP_200_OK
@@ -426,8 +426,8 @@ async def test_reset_password_form_success(mock_send, mock_create_email_token, t
     await session.commit()
     await session.refresh(user_in_db)
 
-    login_response = await test_client.post("/auth/login", json={
-        "email": email,
+    login_response = await test_client.post("/auth/login", data={
+        "username": email,
         "password": "formnewpass"
     })
     assert login_response.status_code == status.HTTP_200_OK
