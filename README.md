@@ -46,17 +46,19 @@ This project implements a full authentication and authorization flow using OAuth
 ## 📂 Project Structure
 
 ```codigo
+```text
 src/
-├── auth/          # Authentication logic
-├── routes/        # API routes (auth, contacts, users)
-├── database/      # DB session and models
-├── repository/    # Database access layer
-├── schemas/       # Pydantic schemas
-├── services/      # Business logic
-├── conf/          # Settings and config
-├── cache/         # Redis client
-└── main.py        # Application entry point
-
+├── auth/            # Authentication logic and JWT handling
+├── cache/           # Redis client for rate limiting
+├── conf/            # Configuration and environment settings
+├── database/        # Database session and SQLAlchemy models
+├── repository/      # Database access layer (CRUD logic)
+├── routes/          # API routes (auth, contacts, users)
+├── schemas/         # Pydantic models for validation
+├── services/        # Business logic (Cloudinary, Email)
+│   └── templates/   # Email HTML templates
+├── templates/       # General HTML templates
+└── main.py          # Application entry point
 ```
 ---
 
