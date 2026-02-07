@@ -15,8 +15,8 @@ from src.repository import auth as repository_auth
 from src.conf.config import settings
 
 
-ALGORITHM = "HS256"
-SECRET_KEY = "your-secret-key"
+
+ALGORITHM = settings.JWT_ALGORITHM
 
 def make_aware(dt: datetime) -> datetime:
     """
@@ -67,7 +67,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(days=7))
     to_encode.update({"exp": expire.timestamp()})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=ALGORITHM)
     return encoded_jwt
 
 
@@ -82,7 +82,7 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) 
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(days=30))
     to_encode.update({"exp": expire.timestamp()})
-    encoded_jwt = jwt.encode(to_encode, settings.refresh_secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, settings.refresh_secret_key, algorithm=ALGORITHM)
     return encoded_jwt
 
 
@@ -101,7 +101,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
@@ -145,7 +145,7 @@ async def create_email_verification_token_and_save(email: str, db: AsyncSession,
 
     to_encode.update({"exp": expire.timestamp()})
 
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=ALGORITHM)
 
     await save_verification_token(user.id, encoded_jwt, "email_verification", db)
 
@@ -200,7 +200,7 @@ async def verify_email_token(token: str, db: AsyncSession) -> Optional[User]:
         detail="Invalid or expired verification token"
     )
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         token_type: str = payload.get("type")
 
@@ -222,8 +222,11 @@ async def verify_email_token(token: str, db: AsyncSession) -> Optional[User]:
 
         updated_user = await repository_users.update_user_is_verified(db, user.id, True)
 
-        await repository_auth.delete_verification_token(verification_token_db.id, db)
+        await db.commit()
 
+        await db.refresh(updated_user)
+
+        await repository_auth.delete_verification_token(verification_token_db.id, db)
 
         return updated_user
 
@@ -258,7 +261,7 @@ async def create_password_reset_token_and_save(email: str, db: AsyncSession,
 
     to_encode.update({"exp": expire.timestamp()})
 
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=ALGORITHM)
 
     print(f"DEBUG create_password_reset_token_and_save: Calling save_verification_token with db: {type(db)} - {db}")
     await save_verification_token(user.id, encoded_jwt, "password_reset", db)
@@ -275,7 +278,7 @@ async def reset_password(token: str, new_password: str, db: AsyncSession) -> Opt
     )
 
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         token_type: str = payload.get("type")
 

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Form
+from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schemas.user import RequestPasswordReset, ResetPassword, Token, UserLogin, UserCreate, UserResponse
@@ -17,6 +18,8 @@ from src.services.email import send_email
 from src.database.db import get_db
 from src.conf.config import settings
 from datetime import datetime, timezone
+
+
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -41,6 +44,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 
     verification_token = await create_email_verification_token_and_save(new_user.email, db)
 
+
     try:
         await send_email(new_user.email, new_user.email, verification_token, "verify_email")
         detail_message = "User successfully registered. Check your email for verification."
@@ -49,7 +53,11 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
         print(f"ATENCIÓN: Fallo al enviar email de verificación a {new_user.email}: {e}")
         detail_message = "User successfully registered, but failed to send verification email. Please contact support."
 
-    return UserResponse(user=new_user, detail=detail_message)
+    return UserResponse(
+        user=new_user,
+        detail=detail_message,
+        verification_token=verification_token
+    )
 
 
 @router.get("/verify_email/{token}")
@@ -67,7 +75,7 @@ async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
     return {"message": "Email successfully verified"}
 
 @router.post("/login", response_model=Token)
-async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     """
     Authenticate user and return access and refresh tokens.
 
@@ -75,8 +83,9 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     :param db: Database session.
     :return: JWT access and refresh tokens.
     """
-    db_user = await repository_users.get_user_by_email(db, user.email)
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
+
+    db_user = await repository_users.get_user_by_email(db, form_data.username)
+    if not db_user or not verify_password(form_data.password, db_user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if not db_user.is_verified:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
@@ -91,6 +100,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
 
 @router.post("/request_password_reset", status_code=status.HTTP_200_OK)
 async def request_password_reset(body: RequestPasswordReset, db: AsyncSession = Depends(get_db)):
+    token = None
     """
     Send a password reset link to the user's email if they exist.
 
@@ -105,7 +115,9 @@ async def request_password_reset(body: RequestPasswordReset, db: AsyncSession = 
             await send_email(user.email, user.email, token, "reset_password")
     except Exception as e:
         print(f"ATENCIÓN: Fallo al enviar email de reseteo a {body.email}: {e}")
-    return {"message": "If a user with that email exists, a password reset link has been sent."}
+    return {"message": "If a user with that email exists, a password reset link has been sent.",
+            "reset_token": token
+    }
 
 
 @router.post("/reset_password", status_code=status.HTTP_200_OK)
