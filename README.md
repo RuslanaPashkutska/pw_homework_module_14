@@ -4,80 +4,48 @@ Backend REST API for managing users and their personal contacts, built with Fast
 
 This project implements a full authentication and authorization flow using OAuth2 Password Flow with JWT, user-scoped resources, async database access, caching, rate limiting, email verification, and cloud storage for avatars.
 
+---
 
 ## 🚀 Features
 
-### Authentication & Security
-
+### 🔐 Authentication & Security
 * User registration and login
-
-
 * Email verification flow
-
-
 * OAuth2 Password Flow
-
-
 * JWT access and refresh tokens
-
-
-* Protected endpoints using Depends(get_current_user)
-
-
+* Protected endpoints using `Depends(get_current_user)`
 * Rate limiting with Redis
 
-## Contacts Management
-
+### 📇 Contacts Management
 * Create, read, update, delete contacts (CRUD)
-
-
 * Contacts are scoped to the authenticated user
-
-
 * Search contacts by name or email
-
-
 * Get upcoming birthdays
 
-## Users
-
+### 👤 Users
 * Get current user profile
-
-
 * Upload user avatar to Cloudinary
 
-## Tech Stack
+---
 
-FastAPI
+## 🛠 Tech Stack
 
+* FastAPI
 * Async SQLAlchemy
-
-
 * PostgreSQL
-
-
 * Redis (rate limiting)
-
-
 * Cloudinary (avatar storage)
-
-
 * JWT / OAuth2
-
-
 * Pydantic
-
-
 * Alembic (migrations)
-
-
 * Poetry (dependency management)
-
-
 * Pytest / Unittest (tests)
+
+---
 
 ## 📂 Project Structure
 
+```codigo
 src/
 ├── auth/          # Authentication logic
 ├── routes/        # API routes (auth, contacts, users)
@@ -89,11 +57,14 @@ src/
 ├── cache/         # Redis client
 └── main.py        # Application entry point
 
+```
+---
 
 ## ⚙️ Environment Variables
 
-Create a .env file based on .env.example:
+Create a `.env` file based on `.env.example`:
 
+```env
 DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/contacts_db
 
 CLOUDINARY_NAME=your_cloud_name
@@ -119,31 +90,34 @@ MAIL_STARTTLS=True
 MAIL_SSL=False
 
 BASE_URL=http://localhost:8000
-FRONTEND_BASE_URL=http://localhost:3000
 
+FRONTEND_BASE_URL=http://localhost:3000
+```
+---
 
 ## ▶️ Run the Project
 
 ### 1️⃣ Install dependencies
-
-poetry install
-
+```bash
+  poetry install
+```
 ### 2️⃣ Run database migrations
-
-alembic upgrade head
-
+```bash
+  alembic upgrade head
+```
 ### 3️⃣ Start the server
-
-poetry run uvicorn src.main:app --reload
-
+```bash
+  poetry run uvicorn src.main:app --reload
+```
 ### The API will be available at:
-
+```codigo
 http://127.0.0.1:8000
-
+```
 ### Swagger UI:
-
+```codigo
 http://127.0.0.1:8000/docs
-
+```
+---
 ## 🔐 Authentication Flow
 
 1. Register a new user (POST /auth/register)
@@ -162,30 +136,26 @@ http://127.0.0.1:8000/docs
    * password → user password
 
 5. Access protected endpoints
-
+---
 ## 📌 Contacts Endpoints (Protected)
 
 * GET /contacts/ — list contacts
 
-
 * POST /contacts/ — create contact
-
 
 * GET /contacts/{id} — get contact by id
 
-
 * PUT /contacts/{id} — update contact
-
 
 * DELETE /contacts/{id} — delete contact
 
-
 * GET /contacts/search/?query= — search contacts
 
-
 * GET /contacts/birthdays/upcoming — upcoming birthdays
-
+---
 ## 🧪 Tests
 
 Run tests with:
-pytest --cov=src
+```bash
+  pytest --cov=src
+```
