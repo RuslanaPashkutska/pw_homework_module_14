@@ -46,7 +46,6 @@ This project implements a full authentication and authorization flow using OAuth
 ## 📂 Project Structure
 
 ```codigo
-```text
 src/
 ├── auth/            # Authentication logic and JWT handling
 ├── cache/           # Redis client for rate limiting
@@ -76,13 +75,13 @@ Create a `.env` file in the root directory (see section below for variables). **
 Create a `.env` file based on `.env.example`:
 
 ```env
-DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/contacts_db
+DATABASE_URL=postgresql+psycopg://user:password@db:5432/contacts_db
 
 CLOUDINARY_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-REDIS_HOST=localhost
+REDIS_HOST=redis
 REDIS_PORT=6379
 REDIS_DB=0
 
