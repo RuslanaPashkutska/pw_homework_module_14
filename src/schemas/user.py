@@ -53,6 +53,7 @@ class UserResponse(BaseModel):
     user: UserDataResponse
     detail: str
     model_config = ConfigDict(from_attributes=True)
+    verification_token: Optional[str] = None
 
 
 class Token(BaseModel):
