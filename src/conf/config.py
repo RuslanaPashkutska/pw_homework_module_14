@@ -9,9 +9,10 @@ class Settings(BaseSettings):
     database_test_url: str = "sqlite+aiosqlite:///./test_db.sqlite3"
 
 
-    database_url: str
+
     secret_key: str
     refresh_secret_key: str
+    JWT_ALGORITHM: str = "HS256"
     algorithm: str = "HS256"
     access_token_minutes: int = 30
     refresh_token_expire_days: int = 7
