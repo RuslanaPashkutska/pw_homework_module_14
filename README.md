@@ -67,8 +67,8 @@ src/
 Create a `.env` file in the root directory (see section below for variables). **Important**: When using Docker, ensure `DATABASE_URL` points to `db` and `REDIS_HOST` points to `redis`.
 
 2️⃣ Run with Docker Compose
-```
-docker-compose up --build
+```bash
+  docker-compose up --build
 ```
 ---
 ## ⚙️ Environment Variables
